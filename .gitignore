@@ -1,0 +1,30 @@
+# macOS metadata
+.DS_Store
+
+# Go binaries and caches
+bin/
+*.exe
+*.test
+*.prof
+load-generator/load-generator
+templates/go/engine
+
+# Python caches
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.venv/
+venv/
+env/
+
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# Redis data volume
+redis-data/
+
+# Local task/plan logs (optional, let's keep it clean)
+.gemini/

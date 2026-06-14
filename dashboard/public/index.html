@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="IICPC 2026 Trading Infrastructure Distributed Benchmarking Platform Leaderboard and Telemetry.">
+  <title>IICPC 2026 - Leaderboard & Live Telemetry</title>
+  
+  <!-- Typography & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- ChartJS CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="index.css">
+</head>
+<body>
+  <div class="glass-bg"></div>
+  
+  <header>
+    <div class="container">
+      <div class="brand">
+        <span class="logo-pulse"></span>
+        <div class="logo-text">
+          <h1>IICPC Summer Hackathon 2026</h1>
+          <p>Distributed Benchmarking & Hosting Platform</p>
+        </div>
+      </div>
+      <div class="server-status">
+        <span id="ws-status" class="badge badge-disconnected">WS Offline</span>
+        <span id="api-status" class="badge badge-disconnected">API Offline</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Active Stress Test Banner (Hidden by default, displayed during run) -->
+    <section id="active-test-banner" class="glass-card active-test-banner hidden">
+      <div class="banner-header">
+        <div class="pulse-container">
+          <div class="pulsing-dot"></div>
+          <h2>TEST SIMULATOR ACTIVE: <span id="banner-team-name">N/A</span></h2>
+        </div>
+        <div id="banner-timer" class="banner-timer">00:00</div>
+      </div>
+      
+      <div class="active-hud-layout">
+        <!-- Telemetry Panel -->
+        <div class="hud-telemetry-panel">
+          <div class="metrics-grid">
+            <div class="metric-card">
+              <span class="metric-label">Current TPS</span>
+              <span id="live-tps" class="metric-value font-mono">0</span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">p50 Latency</span>
+              <span id="live-p50" class="metric-value font-mono">0.00 <span class="unit">ms</span></span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">p99 Latency</span>
+              <span id="live-p99" class="metric-value-warn font-mono">0.00 <span class="unit">ms</span></span>
+            </div>
+            <div class="metric-card">
+              <span class="metric-label">Correctness Errors</span>
+              <span id="live-correctness" class="metric-value-error font-mono">0</span>
+            </div>
+          </div>
+          
+          <div class="chart-container">
+            <canvas id="liveChart"></canvas>
+          </div>
+        </div>
+        
+        <!-- IMC Prosperity-Style Trading Visualizer Panel -->
+        <div class="hud-visualizer-panel">
+          <div class="visualizer-header">
+            <h3>Live Order Book</h3>
+            <span class="hud-status-badge">DEPTH LEVEL 5</span>
+          </div>
+          
+          <!-- Large Buy/Sell HUD Metrics -->
+          <div class="large-book-hud">
+            <div class="hud-side-stat bid-stat">
+              <span class="stat-label">Best Bid (Buy)</span>
+              <span id="hud-best-bid" class="stat-val font-mono">--</span>
+            </div>
+            <div class="hud-side-stat ask-stat">
+              <span class="stat-label">Best Ask (Sell)</span>
+              <span id="hud-best-ask" class="stat-val font-mono">--</span>
+            </div>
+          </div>
+          
+          <div class="orderbook-depth-hud">
+            <div class="depth-side ask-side">
+              <div class="depth-side-title">Asks (Sells)</div>
+              <div class="depth-level-row" id="ask-level-4"><span class="price font-mono">100.50</span><span class="qty font-mono">--</span><div class="depth-bar ask-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="ask-level-3"><span class="price font-mono">100.40</span><span class="qty font-mono">--</span><div class="depth-bar ask-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="ask-level-2"><span class="price font-mono">100.30</span><span class="qty font-mono">--</span><div class="depth-bar ask-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="ask-level-1"><span class="price font-mono">100.20</span><span class="qty font-mono">--</span><div class="depth-bar ask-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="ask-level-0"><span class="price font-mono">100.10</span><span class="qty font-mono">--</span><div class="depth-bar ask-bar" style="width: 0%;"></div></div>
+            </div>
+            
+            <div class="spread-indicator">
+              <span>Spread:</span> <span id="hud-spread-value" class="font-mono">--</span>
+            </div>
+            
+            <div class="depth-side bid-side">
+              <div class="depth-side-title">Bids (Buys)</div>
+              <div class="depth-level-row" id="bid-level-0"><span class="price font-mono">99.90</span><span class="qty font-mono">--</span><div class="depth-bar bid-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="bid-level-1"><span class="price font-mono">99.80</span><span class="qty font-mono">--</span><div class="depth-bar bid-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="bid-level-2"><span class="price font-mono">99.70</span><span class="qty font-mono">--</span><div class="depth-bar bid-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="bid-level-3"><span class="price font-mono">99.60</span><span class="qty font-mono">--</span><div class="depth-bar bid-bar" style="width: 0%;"></div></div>
+              <div class="depth-level-row" id="bid-level-4"><span class="price font-mono">99.50</span><span class="qty font-mono">--</span><div class="depth-bar bid-bar" style="width: 0%;"></div></div>
+            </div>
+          </div>
+          
+          <div class="visualizer-header margin-top-15">
+            <h3>Trade Tape Log</h3>
+            <span class="hud-status-badge blink-red">● RUNNING</span>
+          </div>
+          <div class="trade-tape-terminal font-mono" id="trade-tape">
+            <div class="tape-line system-line">[SYSTEM] Initializing bot fleet...</div>
+            <div class="tape-line system-line">[SYSTEM] Subscribing to live telemetry...</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="dashboard-grid">
+      <!-- Submission & Controls -->
+      <section class="controls-column">
+        <!-- Submission Panel -->
+        <div class="glass-card">
+          <h2>Submit Code</h2>
+          <p class="section-desc">Upload matching engine source code (`main.go`) to compile and sandbox.</p>
+          
+          <form id="submission-form">
+            <div class="form-group">
+              <label for="team-name-input">Team Name</label>
+              <input type="text" id="team-name-input" placeholder="e.g. AlphaQuantum" required autocomplete="off">
+            </div>
+            
+            <div class="form-group">
+              <label>Source File (Go)</label>
+              <div class="file-dropzone" id="dropzone">
+                <span class="icon">📥</span>
+                <span class="text" id="dropzone-text">Click or drag main.go here</span>
+                <input type="file" id="file-input" accept=".go" required style="display: none;">
+              </div>
+            </div>
+            
+            <button type="submit" id="submit-btn" class="btn btn-primary">Build Submission</button>
+          </form>
+          <div id="submit-logs" class="logs-panel hidden"></div>
+        </div>
+
+        <!-- Testing Panel -->
+        <div class="glass-card">
+          <h2>Trigger Benchmarking</h2>
+          <p class="section-desc">Deploy and launch a stress test run against the sandboxed engine.</p>
+          
+          <form id="test-form">
+            <div class="form-group">
+              <label for="test-team-select">Select Team</label>
+              <select id="test-team-select" required>
+                <option value="" disabled selected>Select a team...</option>
+              </select>
+            </div>
+            
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bot-count-input">Bot Fleet Size</label>
+                <input type="number" id="bot-count-input" value="100" min="10" max="2000">
+              </div>
+              <div class="form-group">
+                <label for="duration-input">Duration (sec)</label>
+                <input type="number" id="duration-input" value="30" min="10" max="180">
+              </div>
+            </div>
+            
+            <button type="submit" id="start-test-btn" class="btn btn-accent">Launch Stress Test</button>
+          </form>
+          <div id="test-status-msg" class="status-msg hidden"></div>
+        </div>
+      </section>
+
+      <!-- Leaderboard -->
+      <section class="leaderboard-column">
+        <div class="glass-card leaderboard-card">
+          <div class="leaderboard-header">
+            <h2>Real-Time Leaderboard</h2>
+            <button id="refresh-leaderboard" class="btn-refresh">🔄 Refresh</button>
+          </div>
+          
+          <div class="table-responsive">
+            <table id="leaderboard-table">
+              <thead>
+                <tr>
+                  <th scope="col">Rank</th>
+                  <th scope="col">Team</th>
+                  <th scope="col">Composite Score</th>
+                  <th scope="col">Avg TPS</th>
+                  <th scope="col">p99 Latency</th>
+                  <th scope="col">Success Rate</th>
+                  <th scope="col">Correctness</th>
+                </tr>
+              </thead>
+              <tbody id="leaderboard-body">
+                <tr>
+                  <td colspan="7" class="loading-state">No matching engines benchmarked yet. Submit code to begin.</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+  
+  <footer>
+    <div class="container text-center">
+      <p>&copy; 2026 IICPC Summer Hackathon. Designed for high performance trading systems evaluation.</p>
+    </div>
+  </footer>
+
+  <script src="app.js"></script>
+</body>
+</html>

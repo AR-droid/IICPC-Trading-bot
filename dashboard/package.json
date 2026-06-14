@@ -1,0 +1,14 @@
+{
+  "name": "iicpc-dashboard",
+  "version": "1.0.0",
+  "description": "Real-time leaderboard and telemetry dashboard for IICPC",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2",
+    "redis": "^4.6.13",
+    "ws": "^8.16.0"
+  }
+}

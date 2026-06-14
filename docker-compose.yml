@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: iicpc-redis
+    ports:
+      - "6379:6379"
+    networks:
+      - benchmarking-net
+    volumes:
+      - redis-data:/data
+    restart: always
+
+  sandbox-manager:
+    build:
+      context: ./sandbox-manager
+      dockerfile: Dockerfile
+    container_name: iicpc-sandbox-manager
+    ports:
+      - "8000:8000"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./sandbox-manager:/app
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+      - DOCKER_NETWORK=iicpc-trading-hackathon_benchmarking-net
+    depends_on:
+      - redis
+    networks:
+      - benchmarking-net
+    restart: always
+
+  load-generator:
+    build:
+      context: ./load-generator
+      dockerfile: Dockerfile
+    container_name: iicpc-load-generator
+    environment:
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - benchmarking-net
+    restart: always
+
+  dashboard:
+    build:
+      context: ./dashboard
+      dockerfile: Dockerfile
+    container_name: iicpc-dashboard
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - REDIS_URL=redis://redis:6379/0
+    depends_on:
+      - redis
+    networks:
+      - benchmarking-net
+    restart: always
+
+networks:
+  benchmarking-net:
+    name: iicpc-trading-hackathon_benchmarking-net
+    driver: bridge
+
+volumes:
+  redis-data:

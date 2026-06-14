@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: iicpc-benchmarking
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: iicpc-benchmarking
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+# Redis Database
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: iicpc-benchmarking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          ports:
+            - containerPort: 6379
+          volumeMounts:
+            - name: redis-storage
+              mountPath: /data
+      volumes:
+        - name: redis-storage
+          persistentVolumeClaim:
+            claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+  namespace: iicpc-benchmarking
+spec:
+  ports:
+    - port: 6379
+  selector:
+    app: redis
+---
+# Sandbox Manager
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sandbox-manager
+  namespace: iicpc-benchmarking
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sandbox-manager
+  template:
+    metadata:
+      labels:
+        app: sandbox-manager
+    spec:
+      containers:
+        - name: sandbox-manager
+          image: iicpc-sandbox-manager:latest
+          ports:
+            - containerPort: 8000
+          env:
+            - name: REDIS_URL
+              value: redis://redis.iicpc-benchmarking.svc.cluster.local:6379/0
+            - name: KUBERNETES_MODE
+              value: "true"
+          volumeMounts:
+            - name: docker-socket
+              mountPath: /var/run/docker.sock
+      volumes:
+        - name: docker-socket
+          hostPath:
+            path: /var/run/docker.sock
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sandbox-manager
+  namespace: iicpc-benchmarking
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app: sandbox-manager
+---
+# Load Generator Worker
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: load-generator
+  namespace: iicpc-benchmarking
+spec:
+  replicas: 3 # Scaled horizontally
+  selector:
+    matchLabels:
+      app: load-generator
+  template:
+    metadata:
+      labels:
+        app: load-generator
+    spec:
+      containers:
+        - name: load-generator
+          image: iicpc-load-generator:latest
+          env:
+            - name: REDIS_URL
+              value: redis://redis.iicpc-benchmarking.svc.cluster.local:6379/0
+---
+# Leaderboard & Dashboard
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dashboard
+  namespace: iicpc-benchmarking
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: dashboard
+  template:
+    metadata:
+      labels:
+        app: dashboard
+    spec:
+      containers:
+        - name: dashboard
+          image: iicpc-dashboard:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: REDIS_URL
+              value: redis://redis.iicpc-benchmarking.svc.cluster.local:6379/0
+            - name: PORT
+              value: "3000"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dashboard
+  namespace: iicpc-benchmarking
+spec:
+  type: LoadBalancer
+  ports:
+    - port: 80
+      targetPort: 3000
+  selector:
+    app: dashboard
