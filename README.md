@@ -4,6 +4,14 @@ A high-performance, containerized, and secure evaluation infrastructure built fo
 
 ---
 
+### Live Public Deployment
+The platform is deployed and fully operational on Google Cloud Platform:
+* **Public Dashboard URL**: [http://34.173.252.148:3000/](http://34.173.252.148:3000/)
+
+*Note: You can upload the template Go matching engine file located at `templates/go/main.go` to test the container build pipeline, load generator bot fleet, and real-time WebSocket HUD visualization live.*
+
+---
+
 ## 1. System Architecture
 
 The platform uses a decoupled, microservices-based architecture orchestrated via Docker Compose (locally) or Kubernetes (in production), with Redis serving as the high-speed message broker and state store.
