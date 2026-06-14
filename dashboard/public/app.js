@@ -1,5 +1,5 @@
-// API Base URLs
-const SANDBOX_API = 'http://localhost:8000';
+// Dynamically resolve sandbox API based on current host (works both locally and in cloud VM)
+const SANDBOX_API = `${window.location.protocol}//${window.location.hostname}:8000`;
 const BACKEND_API = window.location.origin;
 
 // State Variables
